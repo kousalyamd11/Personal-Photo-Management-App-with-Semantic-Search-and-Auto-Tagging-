@@ -52,8 +52,8 @@ The **Personal Photo Management System** is a comprehensive application designed
 2. Clone the repository:
 
    ```bash
-   git clone https://github.com/your-username/photo-management-system.git
-   cd photo-management-system
+   git clone https://github.com/kousalyamd11/Personal-Photo-Management-App-with-Semantic-Search-and-Auto-Tagging-.git
+   cd Personal-Photo-Management-App-with-Semantic-Search-and-Auto-Tagging-
    ```
 
 4. Install dependencies:
