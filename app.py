@@ -11,7 +11,6 @@ import numpy as np
 import sqlite3
 import pickle
 from PIL.ExifTags import TAGS
-import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 import jwt
@@ -46,14 +45,13 @@ app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 # Add these configurations
 DB_NAME = 'image_metadata.db'
 model = SentenceTransformer('all-MiniLM-L6-v2')
-secret_key = secrets.token_hex(32)  # 32 bytes = 64 characters
-print(secret_key)
-app.config['SECRET_KEY'] = 'secret_key'  # Change this to a secure secret key
+secret_key = <your-secret-key>  # 32 bytes = 64 characters
+app.config['SECRET_KEY'] = 'your secrete key'  # Change this to a secure secret key
 JWT_EXPIRATION_DELTA = timedelta(days=7)
-app.config['SMTP_SERVER'] = 'smtp.gmail.com'  # Replace with your SMTP server
-app.config['SMTP_PORT'] = 587
-app.config['SMTP_USERNAME'] = 'photomanagement80@gmail.com'  # Replace with your email
-app.config['SMTP_PASSWORD'] = 'umss bznz pjkj bqsd'  # Replace with your email password
+app.config['SMTP_SERVER'] = 'replace with your smtp server'  # Replace with your SMTP server
+app.config['SMTP_PORT'] = 'replace with your smtp port'
+app.config['SMTP_USERNAME'] = 'example@gmail.com'  # Replace with your email
+app.config['SMTP_PASSWORD'] = 'google app password'  # Replace with your email password
 RESET_CODES = {}  # Store reset codes temporarily (consider using Redis in production)
 
 # Define the token_required decorator
