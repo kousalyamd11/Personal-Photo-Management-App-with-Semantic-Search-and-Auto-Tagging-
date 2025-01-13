@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Photo Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation Bar -->
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <h1 class="text-2xl font-bold text-gray-800">Personal Photo Management System</h1>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-md">
+            <!-- Login Form -->
+            <div id="loginForm">
+                <h2 class="text-center text-3xl font-extrabold text-gray-900 mb-8">Login</h2>
+                <div class="space-y-4">
+                    <input type="text" id="username" placeholder="Username" 
+                        class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm">
+                    <input type="password" id="password" placeholder="Password" 
+                        class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm">
+                    <button onclick="login()" 
+                        class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Login
+                    </button>
+                </div>
+                <div class="text-center mt-4 space-y-2">
+                    <p>Don't have an account? 
+                        <a href="#" onclick="toggleForms('registerForm')" class="text-indigo-600 hover:text-indigo-500">Register</a>
+                    </p>
+                    <p>
+                        <a href="#" onclick="toggleForms('forgotPasswordForm')" class="text-indigo-600 hover:text-indigo-500">Forgot Password?</a>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Forgot Password Form -->
+            <div id="forgotPasswordForm" class="hidden">
+                <h2 class="text-center text-3xl font-extrabold text-gray-900 mb-8">Reset Password</h2>
+                <div id="emailStep" class="space-y-4">
+                    <input type="email" id="resetEmail" placeholder="Enter your email" 
+                        class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm">
+                    <button onclick="sendResetCode()" 
+                        class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Send Reset Code
+                    </button>
+                </div>
+                <div id="resetStep" class="hidden space-y-4">
+                    <input type="text" id="resetCode" placeholder="Enter reset code" 
+                        class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm">
+                    <input type="password" id="newPassword" placeholder="New Password" 
+                        class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm">
+                    <div class="text-sm text-gray-600 bg-gray-50 p-3 rounded">
+                        Password must contain at least:<br>
+                        - 1 uppercase letter<br>
+                        - 1 lowercase letter<br>
+                        - 1 number<br>
+                        - 1 special character<br>
+                        - Minimum 8 characters
+                    </div>
+                    <button onclick="resetPassword()" 
+                        class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Reset Password
+                    </button>
+                </div>
+                <div class="text-center mt-4">
+                    <a href="#" onclick="toggleForms('loginForm')" class="text-indigo-600 hover:text-indigo-500">Back to Login</a>
+                </div>
+            </div>
+
+            <!-- Register Form -->
+            <div id="registerForm" class="hidden">
+                <h2 class="text-center text-3xl font-extrabold text-gray-900 mb-8">Register</h2>
+                <div class="space-y-4">
+                    <input type="text" id="regUsername" placeholder="Username" 
+                        class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm">
+                    <input type="password" id="regPassword" placeholder="Password" 
+                        class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm">
+                    <input type="email" id="regEmail" placeholder="Email" 
+                        class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm">
+                    <button onclick="register()" 
+                        class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Register
+                    </button>
+                </div>
+                <div class="text-center mt-4">
+                    <p>Already have an account? 
+                        <a href="#" onclick="toggleForms('loginForm')" class="text-indigo-600 hover:text-indigo-500">Login</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function validatePassword(password) {
+            const minLength = 8;
+            const hasUpperCase = /[A-Z]/.test(password);
+            const hasLowerCase = /[a-z]/.test(password);
+            const hasNumbers = /\d/.test(password);
+            const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+            
+            return password.length >= minLength && 
+                   hasUpperCase && 
+                   hasLowerCase && 
+                   hasNumbers && 
+                   hasSpecialChar;
+        }
+
+        function toggleForms(showFormId) {
+            const forms = ['loginForm', 'registerForm', 'forgotPasswordForm'];
+            forms.forEach(formId => {
+                document.getElementById(formId).style.display = formId === showFormId ? 'block' : 'none';
+            });
+        }
+
+        async function sendResetCode() {
+            const email = document.getElementById('resetEmail').value;
+            try {
+                const response = await fetch('http://localhost:5000/send-reset-code', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email })
+                });
+                
+                const data = await response.json();
+                if (response.ok) {
+                    document.getElementById('emailStep').style.display = 'none';
+                    document.getElementById('resetStep').style.display = 'block';
+                    alert('Reset code sent to your email!');
+                } else {
+                    alert(data.error);
+                }
+            } catch (error) {
+                alert('Error sending reset code: ' + error);
+            }
+        }
+
+        async function resetPassword() {
+            const email = document.getElementById('resetEmail').value;
+            const resetCode = document.getElementById('resetCode').value;
+            const newPassword = document.getElementById('newPassword').value;
+            
+            if (!validatePassword(newPassword)) {
+                alert('Password does not meet requirements!');
+                return;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:5000/reset-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        email,
+                        reset_code: resetCode,
+                        new_password: newPassword
+                    })
+                });
+                
+                const data = await response.json();
+                if (response.ok) {
+                    alert('Password reset successful! Please login with your new password.');
+                    toggleForms('loginForm');
+                } else {
+                    alert(data.error);
+                }
+            } catch (error) {
+                alert('Error resetting password: ' + error);
+            }
+        }
+
+        async function register() {
+            const username = document.getElementById('regUsername').value;
+            const password = document.getElementById('regPassword').value;
+            const email = document.getElementById('regEmail').value;
+            
+            if (!username || !password || !email) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            if (!validatePassword(password)) {
+                alert('Password does not meet requirements!');
+                return;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:5000/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        username: username,
+                        password: password,
+                        email: email 
+                    })
+                });
+                
+                const data = await response.json();
+                if (response.ok) {
+                    alert('Registration successful! Please login.');
+                    toggleForms('loginForm'); // Switch back to login form
+                } else {
+                    alert(data.error || 'Registration failed');
+                }
+            } catch (error) {
+                alert('Registration failed: ' + error);
+            }
+        }
+
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch('http://localhost:5000/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                if (data.token) {
+                    localStorage.setItem('authToken', data.token);
+                    window.location.href = 'index.html'; // Redirect to main page
+                } else {
+                    alert(data.error);
+                }
+            } catch (error) {
+                alert('Login failed: ' + error);
+            }
+        }
+
+        // Check if user is already logged in
+        if (localStorage.getItem('authToken')) {
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>
