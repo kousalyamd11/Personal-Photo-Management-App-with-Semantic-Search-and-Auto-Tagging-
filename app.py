@@ -454,6 +454,37 @@ def update_metadata(current_user_id):
         print(f"Error updating metadata: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/delete-image', methods=['POST'])
+@token_required
+def delete_image(current_user_id):
+    try:
+        data = request.json
+        filename = data.get('filename')
+        if not filename:
+            return jsonify({'error': 'Filename is required'}), 400
+
+        # Delete file from filesystem
+        user_upload_dir = os.path.join(app.config['UPLOAD_FOLDER'], str(current_user_id))
+        file_path = os.path.join(user_upload_dir, filename)
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+        # Delete metadata from database
+        conn = sqlite3.connect(DB_NAME)
+        c = conn.cursor()
+        c.execute('''
+            DELETE FROM images 
+            WHERE filename = ? AND user_id = ?
+        ''', (filename, current_user_id))
+        conn.commit()
+        conn.close()
+
+        return jsonify({'message': 'Photo is deleted successfully.'})
+    except Exception as e:
+        print(f"Error deleting image: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
 # Add new routes for authentication
 @app.route('/register', methods=['POST'])
 def register():
