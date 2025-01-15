@@ -64,8 +64,7 @@ The **Personal Photo Management System** is a comprehensive application designed
 
 5. Set up in app.py file with the following:
    ```env
-   TF_ENABLE_ONEDNN_OPTS=0
-   SECRET_KEY=<your-secret-key>
+  
    SMTP_SERVER=smtp.gmail.com
    SMTP_PORT=587
    SMTP_USERNAME=<your-email>
