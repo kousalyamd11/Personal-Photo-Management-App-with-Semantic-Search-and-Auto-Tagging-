@@ -56,13 +56,13 @@ The **Personal Photo Management System** is a comprehensive application designed
    cd Personal-Photo-Management-App-with-Semantic-Search-and-Auto-Tagging-
    ```
 
-4. Install dependencies:
+3. Install dependencies:
 
    ```bash
    pip install -r requirements.txt
    ```
 
-5. Set up in app.py file with the following:
+4. Set up in app.py file with the following:
    ```env
   
    SMTP_SERVER=smtp.gmail.com
@@ -70,13 +70,14 @@ The **Personal Photo Management System** is a comprehensive application designed
    SMTP_USERNAME=<your-email>
    SMTP_PASSWORD=<your-email-password>
    ```
+6. Create a folder named **uploads** specifically for storing photos:
 
-6. Initialize the database:
+
+7. Initialize the database:
 
    ```bash
    python app.py
    ```
-
 ---
 
 ## Running the Application
