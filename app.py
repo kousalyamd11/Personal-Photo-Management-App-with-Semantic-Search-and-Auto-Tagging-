@@ -11,6 +11,7 @@ import numpy as np
 import sqlite3
 import pickle
 from PIL.ExifTags import TAGS
+import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 import jwt
@@ -22,6 +23,8 @@ import uuid
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from groq import Groq
+
 
 app = Flask(__name__)
 CORS(app)
@@ -37,6 +40,9 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 load_dotenv(find_dotenv())
+API_KEY = "your groq API key"
+os.environ["GROQ_API_KEY"] = API_KEY
+
 
 MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB limit
 
@@ -45,14 +51,15 @@ app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 # Add these configurations
 DB_NAME = 'image_metadata.db'
 model = SentenceTransformer('all-MiniLM-L6-v2')
-secret_key = secrets.token_hex(32) # 32 bytes = 64 characters
-app.config['SECRET_KEY'] = 'secret_key' 
+secret_key = secrets.token_hex(32)  # 32 bytes = 64 characters
+print(secret_key)
+app.config['SECRET_KEY'] = 'secret_key'  # Change this to a secure secret key
 JWT_EXPIRATION_DELTA = timedelta(days=7)
-app.config['SMTP_SERVER'] = 'replace with your smtp server'  # Replace with your SMTP server
-app.config['SMTP_PORT'] = 'replace with your smtp port'
+app.config['SMTP_SERVER'] = 'smtp.gmail.com'  # Replace with your SMTP server
+app.config['SMTP_PORT'] = 587
 app.config['SMTP_USERNAME'] = 'example@gmail.com'  # Replace with your email
-app.config['SMTP_PASSWORD'] = 'google app password'  # Replace with your email password
-RESET_CODES = {} 
+app.config['SMTP_PASSWORD'] = 'google appp password'  # Replace with your email password
+RESET_CODES = {}  # Store reset codes temporarily (consider using Redis in production)
 
 # Define the token_required decorator
 def token_required(f):
@@ -79,7 +86,7 @@ def allowed_file(filename):
 
 # Initialize both pipelines
 pipe = pipeline("image-to-text", model="Salesforce/blip-image-captioning-large")
-tag_pipe = pipeline("image-classification", model="google/vit-base-patch16-224", top_k=20)
+client = Groq()
 
 # Initialize database
 def init_db():
@@ -224,46 +231,72 @@ def image2text(image_path, user_id):
         img = Image.open(image_path)
         
         # Get image caption
+        
         caption_result = pipe(img)
         
         # Get image tags with improved confidence handling
-        tag_results = tag_pipe(img)
+        caption = caption_result[0]["generated_text"]
         
-        # Improved tag filtering and processing
-        tags = []
-        seen_labels = set()
+        # Generate tags using Groq
+        messages = [
+            {
+                "role": "user",
+                "content": "i want you to generate the exact tags for the given text which is generated for the image "
+            },
+            {
+                "role": "assistant",
+                "content": "I'm ready to help. What is the text that was generated for the image? Please provide it, and I'll generate the exact tags for you."
+            },
+            {
+                "role": "user",
+                "content": "give only 4 to 5  exact related  tags i don't want any sentences "
+            },
+            {
+                "role": "assistant",
+                "content": "I don't see any text. Please provide the text, I'll give 4-5 tags."
+            },
+            {
+                "role": "user",
+                "content": caption
+            },
+            {
+                "role": "assistant",
+                "content": "Here are some possible tags for the given caption:\n\n"
+            }
+        ]
         
-        for result in tag_results:
-            if result["score"] > 0.15 and result["label"].lower() not in seen_labels:
-                label = result["label"].replace("_", " ").title()
-                seen_labels.add(label.lower())
-                
-                tags.append({
-                    "label": label,
-                    "confidence": round(result["score"], 3)
-                })
-                
-                if len(tags) >= 10:
-                    break
+        completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=messages,
+            temperature=1,
+            max_tokens=1024,
+            top_p=1,
+            stream=True,
+            stop=None,
+        )
         
-        tags = sorted(tags, key=lambda x: x["confidence"], reverse=True)
+        tags_response = ""
+        for chunk in completion:
+            if chunk.choices and chunk.choices[0].delta and chunk.choices[0].delta.content:
+                tags_response += chunk.choices[0].delta.content
         
-        img.close()
+        # Process the tags_response to extract tags
+        tags_text = tags_response.strip()
+        if tags_text.startswith("Here are some possible tags for the given caption:\n\n"):
+            tags_text = tags_text[len("Here are some possible tags for the given caption:\n\n"):]
         
-        # Extract metadata
-        metadata = extract_metadata(image_path)
-
-          # Create embedding for the caption
-        caption_embedding = model.encode(caption_result[0]["generated_text"]).tolist()
+        tags_list = [tag.strip('* ').strip() for tag in tags_text.split('\n') if tag.strip('* ')]
+        
+        # Create embedding for the caption
+        caption_embedding = model.encode(caption).tolist()
         
         result = {
-            "caption": caption_result[0]["generated_text"],
-            "tags": tags,
+            "caption": caption,
+            "tags": tags_list,
             "filename": os.path.basename(image_path),
-            "metadata": metadata,
-            "embedding": caption_embedding 
+            "metadata": extract_metadata(image_path),
+            "embedding": caption_embedding
         }
-        
         print(f"Successfully processed image with result: {result}")
         
        
@@ -274,9 +307,9 @@ def image2text(image_path, user_id):
             filename=os.path.basename(image_path),
             filepath=image_path,
             caption=result["caption"],
-            tags=tags,
+            tags=tags_list,
             embedding=caption_embedding,
-            metadata=metadata
+            metadata=result["metadata"]
         )
         
         return result
@@ -315,6 +348,8 @@ def upload_file(current_user_id):
         
         result = image2text(filepath, current_user_id)
         
+        result['user_id'] = current_user_id
+        
         return jsonify({'result': result})
     except Exception as e:
         # Clean up file if there's an error
@@ -346,14 +381,21 @@ def semantic_search(current_user_id):
         if date_filter:
             filtered_images = [
                 image for image in metadata['images']
+                if image['metadata']['created_date'] 
+                and len(image['metadata']['created_date']) >= 10
                 if image['metadata']['created_date'][:10] == date_filter
             ]
             # Filter embeddings accordingly
             filtered_embeddings = [
                 metadata['embeddings'][idx]
                 for idx, image in enumerate(metadata['images'])
+                if image['metadata']['created_date'] 
+                and len(image['metadata']['created_date']) >= 10 
                 if image['metadata']['created_date'][:10] == date_filter
             ]
+
+        if not filtered_images:
+            return jsonify({'results': []})
 
         if not query and date_filter:
             # If only the date filter is applied, return filtered images
@@ -371,30 +413,44 @@ def semantic_search(current_user_id):
             ]})
 
         if query:
-            # Perform semantic search on the filtered images
-            query_embedding = model.encode(query, convert_to_numpy=True).astype(np.float32)
-            stored_embeddings = np.array(filtered_embeddings, dtype=np.float32)
-
-            similarities = util.cos_sim(query_embedding, stored_embeddings)[0]
-            similarities = np.array(similarities)
-
-            # Find top matches
-            top_k = min(10, len(filtered_images))
-            top_indices = np.argpartition(similarities, -top_k)[-top_k:]
-            top_indices = top_indices[np.argsort(-similarities[top_indices])]
 
             results = []
-            for idx in top_indices:
-                if similarities[idx] > 0.2:
-                    image_info = filtered_images[idx]
-                    image_info['metadata']['user_id'] = current_user_id
+            query_lower = query.lower()
+            # Perform semantic search on the filtered images
+            query_embedding = model.encode(query_lower, convert_to_numpy=True).astype(np.float32)
+            
+            for idx, image in enumerate(filtered_images):
+
+                if isinstance(image['tags'], list):
+                    tags = [str(tag) for tag in image['tags']]  # Convert all tags to strings
+                else:
+                    tags = []
+                # Combine caption and tags into a single text for embedding comparison
+                combined_text = image['caption'] + " " + " ".join(tags)
+                combined_embedding = model.encode(combined_text, convert_to_numpy=True).astype(np.float32)
+
+            
+
+                similarities = util.cos_sim(query_embedding, combined_embedding)[0][0]
+                
+
+            # Find top matches
+            
+                if similarities > 0.3:
+                    
+                    image['metadata']['user_id'] = current_user_id
                     results.append({
-                        'filename': image_info['filename'],
-                        'caption': image_info['caption'],
-                        'tags': image_info['tags'],
-                        'metadata': image_info['metadata'],
-                        'similarity': float(similarities[idx])
+                        'filename': image['filename'],
+                        'caption': image['caption'],
+                        'tags': tags,
+                        'metadata': image['metadata'],
+                        'similarity': float(similarities)
                     })
+
+            results.sort(key=lambda x: x['similarity'], reverse=True)
+
+            # Limit the number of results to top 10
+           
 
             return jsonify({'results': results})
 
@@ -494,7 +550,6 @@ def register():
         username = data['username']
         password = data['password']
         email = data['email']
-        
         conn = sqlite3.connect(DB_NAME)
         c = conn.cursor()
         
@@ -634,6 +689,54 @@ def reset_password():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+@app.route('/generate_tags', methods=['POST'])
+def generate_tags():
+    try:
+        # Extract the caption from the user's request
+        data = request.json
+        if not data or 'caption' not in data:
+            return jsonify({"error": "Caption is required"}), 400
+
+        caption = data['caption']
+
+        # Initialize Groq client
+        client = Groq()
+
+        # Generate tags using the Groq API
+        completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {
+                    "role": "user",
+                    "content": "i want you to generate the tags for the given caption"
+                },
+                {
+                    "role": "assistant",
+                    "content": "I'm ready to help. What is the caption? Please go ahead and share it, and I'll generate some relevant tags for you."
+                },
+                {
+                    "role": "user",
+                    "content": caption
+                }
+            ],
+            temperature=1,
+            max_tokens=1024,
+            top_p=1,
+            stream=True,
+            stop=None,
+        )
+
+        # Collect and return the tags
+        tags = ""
+        for chunk in completion:
+            tags += chunk.choices[0].delta.content or ""
+
+        return jsonify({"caption": caption, "tags": tags.split("\n")})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 if __name__ == '__main__':
     init_db()
