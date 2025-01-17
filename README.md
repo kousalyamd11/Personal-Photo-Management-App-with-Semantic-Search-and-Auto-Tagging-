@@ -41,7 +41,7 @@ The **Personal Photo Management System** is a comprehensive application designed
 
 ### AI Models
 - **Image Captioning**: Salesforce's BLIP Image Captioning.
-- **Image Classification**: Google ViT for tagging.
+- **Generating tags**:GroqCloud
 
 ---
 
@@ -64,14 +64,12 @@ The **Personal Photo Management System** is a comprehensive application designed
 
 4. Set up in app.py file with the following:
    ```env
-  
+   API_KEY = "groq API key"
    SMTP_SERVER=smtp.gmail.com
    SMTP_PORT=587
    SMTP_USERNAME=<your-email>
    SMTP_PASSWORD=<your-email-password>
    ```
-6. Create a folder named **uploads** specifically for storing photos:
-
 
 7. Initialize the database:
 
