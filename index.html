@@ -6,7 +6,6 @@
     <title>Personal Photo Management System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-
 </head>
 <body class="bg-gray-50">
     <!-- Navigation Bar -->
@@ -42,16 +41,18 @@
 
         <!-- Drop Zone -->
         <div class="drop-zone bg-white rounded-lg shadow-md p-8 max-w-xl mx-auto relative mt-8" id="dropZone">
-            <div class="text-6xl text-indigo-500 text-center mb-4">📁</div>
-            <p class="text-gray-600 text-center mb-4">Drag and drop an image here or</p>
-            <input type="file" id="fileInput" accept="image/png,image/jpeg,image/jpg,image/gif" class="hidden">
-            <div class="text-center">
-                <button onclick="document.getElementById('fileInput').click()" 
-                    class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                    Choose File
-                </button>
+            <div id="dropZoneContent">
+                <div id="emojiPlaceholder" class="text-6xl text-indigo-500 text-center mb-4">📁</div>
+                <p class="text-gray-600 text-center mb-4">Drag and drop an image here or</p>
+                <input type="file" id="fileInput" accept="image/png,image/jpeg,image/jpg,image/gif" class="hidden">
+                <div class="text-center">
+                    <button onclick="document.getElementById('fileInput').click()" 
+                        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Choose File
+                    </button>
+                </div>
+                <p class="text-sm text-gray-500 text-center mt-2">Allowed file types: PNG, JPG, JPEG, GIF</p>
             </div>
-            <p class="text-sm text-gray-500 text-center mt-2">Allowed file types: PNG, JPG, JPEG, GIF</p>
             
             <!-- Updated Loading Indicator -->
             <div id="loading" class="hidden absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
@@ -81,6 +82,7 @@
         const dropZone = document.getElementById('dropZone');
         const fileInput = document.getElementById('fileInput');
         const resultDiv = document.getElementById('result');
+        const emojiPlaceholder = document.getElementById('emojiPlaceholder');
 
         // Prevent default drag behaviors
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
@@ -164,6 +166,12 @@
                     // Move search section above drop zone
                     dropZone.parentNode.insertBefore(searchSection, dropZone);
                     
+                    // Replace the 📁 emoji with the uploaded image
+                    emojiPlaceholder.innerHTML = `
+                        <img src="http://localhost:5000/uploads/${data.result.user_id}/${data.result.filename}" 
+                             alt="Uploaded Image" class="w-full h-48 object-cover rounded-lg">
+                    `;
+                    
                     resultDiv.innerHTML = `
                         <div>
                             <p class="font-semibold mb-2">Caption:</p>
@@ -173,9 +181,9 @@
                             <div id="tagContainer" class="mb-4">
                                 ${data.result.tags.map(tag => `
                                     <div class="tag-item inline-block m-1">
-                                        <input type="text" value="${tag.label}" 
-                                            class="w-32 p-1 border rounded-md text-sm"
-                                            data-confidence="${tag.confidence}">
+                                        <input type="text" value="${tag}" 
+                                            class="w-32 p-1 border rounded-md text-sm">
+                                           
                                         <button onclick="removeTag(this)" class="ml-1 text-gray-500 hover:text-red-500">×</button>
                                     </div>
                                 `).join('')}
@@ -260,7 +268,7 @@
                              <i class="fas fa-trash text-xl"></i>
                            </button>
                          </div>
-                        <p><strong>Caption:</strong> ${result.caption}</p>
+                        <p><strong>Description:</strong> ${result.caption}</p>
                        ${result.similarity !== undefined ? `
                     <p><strong>Similarity:</strong> ${result.similarity.toFixed(2)}</p>
                 ` : ''}
@@ -271,9 +279,7 @@
                         </div>
                         <p><strong>Tags:</strong></p>
                         <ul>
-                            ${result.tags.map(tag => 
-                                `<li>${tag.label} (${(tag.confidence * 100).toFixed(1)}%)</li>`
-                            ).join('')}
+                            ${result.tags.map(tag => `<li>${tag}</li>`).join('')}
                         </ul>
                        </div>
                 `).join('');
@@ -284,23 +290,21 @@
         }
 
         function addNewTag() {
-            const newTagInput = document.getElementById('newTagInput');
-            const tagValue = newTagInput.value.trim();
-            
-            if (tagValue) {
-                const tagContainer = document.getElementById('tagContainer');
-                const newTagHtml = `
-                    <div class="tag-item" style="display: inline-block; margin: 5px;">
-                        <input type="text" value="${tagValue}" 
-                            style="width: 150px; padding: 5px;" 
-                            data-confidence="1.0">
-                        <button onclick="removeTag(this)" style="margin-left: 5px;">×</button>
-                    </div>
-                `;
-                tagContainer.insertAdjacentHTML('beforeend', newTagHtml);
-                newTagInput.value = '';
-            }
-        }
+    const newTagInput = document.getElementById('newTagInput');
+    const tagValue = newTagInput.value.trim();
+    if (tagValue) {
+        const tagContainer = document.getElementById('tagContainer');
+        const newTagHtml = `
+            <div class="tag-item inline-block m-1">
+                <input type="text" value="${tagValue}" 
+                    class="w-32 p-1 border rounded-md text-sm">
+                <button onclick="removeTag(this)" class="ml-1 text-gray-500 hover:text-red-500">×</button>
+            </div>
+        `;
+        tagContainer.insertAdjacentHTML('beforeend', newTagHtml);
+        newTagInput.value = '';
+    }
+}
 
         function deleteImage(filename) {
     if (!confirm('Are you sure you want to delete this photo?')) return;
@@ -334,10 +338,10 @@
         function saveChanges(filename) {
             const caption = document.getElementById('editableCaption').value;
             const tagElements = document.querySelectorAll('.tag-item input');
-            const tags = Array.from(tagElements).map(input => ({
-                label: input.value,
-                confidence: parseFloat(input.dataset.confidence)
-            }));
+            const tags = Array.from(tagElements).map(input => 
+                input.value);
+                
+         
 
             fetch('http://localhost:5000/update-metadata', {
                 method: 'POST',
